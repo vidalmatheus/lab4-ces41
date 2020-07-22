@@ -32,8 +32,8 @@
 
 # How to Run:
 ```
-flex lab4.l
-yacc lab4.y
+.\flex.exe lab4.l
+.\yacc.exe lab4.y
 .\gcc.exe y.tab.c main.c yyerror.c -o lab4 -lfl
 Get-Content input.txt | lab4.exe > output.txt
 ```
