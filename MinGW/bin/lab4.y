@@ -21,18 +21,11 @@
 
 /*   Definicao dos tipos de identificadores   */
 
-#define     IDGLOB		1
-#define     IDVAR		2
-#define     IDFUNC		3
-#define     IDPROC		4
-#define     IDPROG		5
-#define     IDBLOC		6
-
-/*  Definicao dos tipos de 
-	passagem de parametros  */
-
-#define     PARAMVAL	1
-#define     PARAMREF	2
+#define IDGLOB		1
+#define IDVAR		2
+#define IDFUNC		3
+#define IDPROC		4
+#define IDPROG		5
 
 /*  Definicao dos tipos de variaveis   */
 
@@ -109,17 +102,15 @@ void NaoEsperado (char *);
 
 /* Declaracoes para atributos das expressoes e variaveis */
 
-// typedef struct infoexpressao infoexpressao;
-// struct infoexpressao {
-// 	int tipo;
-// 	operando opnd;
-// };
+typedef struct infoexpressao infoexpressao;
+struct infoexpressao {
+	int tipo;
+};
 
-// typedef struct infovariavel infovariavel;
-// struct infovariavel {
-// 	simbolo simb;
-// 	operando opnd;
-// };
+typedef struct infovariavel infovariavel;
+struct infovariavel {
+	simbolo simb;
+};
 
 %}
 
@@ -132,8 +123,7 @@ void NaoEsperado (char *);
 	char carac;
 	simbolo simb;
 	int tipoexpr;
-    // infoexpressao infoexpr;
-	// infovariavel infovar;
+	int nsubscr;
 }
 
 /* Declaracao dos atributos dos tokens e dos nao-terminais */
@@ -141,6 +131,7 @@ void NaoEsperado (char *);
 %type	    <simb>	        Variavel
 %type 	    <tipoexpr> 	    Expressao  ExprAux1  ExprAux2
                             ExprAux3   ExprAux4   Termo   Fator
+%type 		<nsubscr>		Subscritos ListSubscr
 %token		<cadeia>		ID
 %token		<carac>		    CTCARAC
 %token		<cadeia>		CADEIA
@@ -199,45 +190,69 @@ Prog			:	{InicTabSimb ();}  PROGRAMA  ID  ABTRIP
                     ImprimeTabSimb ();
                     /*escopo = InsereSimb (“##global”, IDGLOB, NOTVAR, NULL);*/}
                 ;
+				
 Decls 		    :
                 |   VAR  ABCHAV  {printf ("var {\n");}  ListDecl
                     FCHAV  {printf ("}\n");}
                 ;
+				
 ListDecl		:	Declaracao  |  ListDecl  Declaracao
                 ;
+				
 Declaracao 	    :	Tipo  ABPAR  {printf ("( ");}  ListElem
                     FPAR  {printf (")\n");}
                 ;
+				
 Tipo			: 	INT  {printf ("int "); tipocorrente = INTEGER;}
                 |   REAL  {printf ("real "); tipocorrente = FLOAT;}
                 |   CARAC  {printf ("carac "); tipocorrente = CHAR;}
                 |   LOGIC  {printf ("logic "); tipocorrente = LOGICAL;}
                 ;
+				
 ListElem    	:	Elem  |  ListElem  VIRG  {printf (", ");}  Elem
                 ;
+				
 Elem        	:	ID  {
                         printf ("%s ", $1);
                         if  (ProcuraSimb ($1)  !=  NULL)
                             DeclaracaoRepetida ($1);
                         else
-                            InsereSimb ($1,  IDVAR,  tipocorrente);
+                            simb = InsereSimb ($1,  IDVAR,  tipocorrente);
+							simb->array = FALSE; simb->ndims = 0;
                     }  Dims
                 ;
+				
 Dims            :
                 |   ABCOL  {printf ("[ ");}  ListDim
-                    FCOL  {printf ("] ");}
+                    FCOL  {
+						printf ("] ");
+						simb->array = TRUE;
+					}
                 ;
-ListDim	        : 	CTINT   {printf ("%d ", $1);}
-                |   ListDim   VIRG   CTINT   {printf (", %d ", $3);}
+				
+ListDim	        : 	CTINT   {printf ("%d ", $1);
+							 if ($1 <= 0) Esperado("Valor inteiro positivo");
+							 simb->ndims++;
+							 simb->dims[simb->ndims] = $1;
+							}
+                |   ListDim   VIRG   CTINT   {printf (", %d ", $3);
+											  if($3 <= 0) Esperado("Valor inteiro positivo");
+											  simb->ndims++;
+											  simb->dims[simb->ndims] = $3;
+											 }
                 ;
+				
 ListMod 	    :
                 |   ListMod  Modulo
                 ;
+				
 Modulo        	:	Cabecalho  Corpo
                 ;
+				
 Cabecalho     	:   CabFunc  
                 |   CabProc
                 ;
+				
 CabFunc	    	:   FUNCAO {printf ("funcao ");} Tipo  
                     ID  {
                         printf ("%s ", $4);
@@ -246,15 +261,8 @@ CabFunc	    	:   FUNCAO {printf ("funcao ");} Tipo
                         else
                             InsereSimb ($4,  IDVAR,  tipocorrente);
                     }  ABPAR  {printf ("( ");}  ListParam FPAR  {printf (") ");}
-                |   FUNCAO {printf ("funcao ");} Tipo  
-                    ID  {
-                        printf ("%s ", $4);
-                        if  (ProcuraSimb ($4)  !=  NULL)
-                            DeclaracaoRepetida ($4);
-                        else
-                            InsereSimb ($4,  IDVAR,  tipocorrente);
-                    }  ABPAR FPAR  {printf ("() ");}
                 ;
+				
 CabProc	    	:   PROCEDIMENTO {printf ("procedimento ");}   
                     ID  {
                         printf ("%s ", $3);
@@ -265,19 +273,13 @@ CabProc	    	:   PROCEDIMENTO {printf ("procedimento ");}
                         else
                             InsereSimb ($3,  IDPROC,  tipocorrente);*/
                     }  ABPAR  {printf ("( ");}  ListParam FPAR  {printf (")\n");}
-                |   PROCEDIMENTO {printf ("procedimento ");} 
-                    ID  {
-                        printf ("%s ", $3);
-                        if  (ProcuraSimb ($3)  !=  NULL)
-                            DeclaracaoRepetida ($3);
-                        else
-                            InsereSimb ($3,  IDVAR,  tipocorrente);
-                    }  ABPAR FPAR  {printf ("()\n");}
                 ;
+				
 ListParam   	: 	Parametro  
                 |   ListParam  VIRG {printf (", ");} Parametro
 
-Parametro   	:   Tipo  
+Parametro   	:   
+				|	Tipo  
                     ID  {
                         printf ("%s ", $2);
                         if  (ProcuraSimb ($2)  !=  NULL)
@@ -303,18 +305,25 @@ Comando        	:   CmdComp  |  CmdSe  |  CmdEnquanto
                 |   CmdLer  |  CmdEscrever  |  CmdAtrib
                 |   ChamadaProc  |  CmdRetornar  |  PVIRG  {printf ("; ");}
                 ;
-CmdSe		    :   SE    ABPAR  {printf ("se ( ");}  Expressao  FPAR
-                    {printf (")\n");}  Comando  CmdSenao
+CmdSe		    :   SE    ABPAR  {printf ("se ( ");}  Expressao  {
+                        if ($4 != LOGICAL)
+                            Incompatibilidade ("Expressao nao logica em comando se");
+                    }  FPAR  {printf (")\n");}  Comando  CmdSenao
                 ;
 CmdSenao		:   
                 |   SENAO  {printf ("senao\n");}  Comando
                 ;
-CmdEnquanto   	:	ENQUANTO  ABPAR  {printf ("enquanto ( ");}  Expressao
-                    FPAR  {printf (")\n");}  Comando
+CmdEnquanto   	:	ENQUANTO  ABPAR  {printf ("enquanto ( ");}  Expressao	{
+                        if ($4 != LOGICAL)
+                            Incompatibilidade ("Expressao nao logica em comando enquanto");
+                    }  FPAR  {printf (")\n");}  Comando
                 ;
 CmdRepetir  	:   REPETIR {printf ("repetir ");} Comando  
-                |   ENQUANTO  ABPAR {printf ("enquanto ( ");}  Expressao  
-				|   FPAR  PVIRG {printf (") ;\n");}
+                    ENQUANTO  ABPAR {printf ("enquanto ( ");}  Expressao  {
+                        if ($7 != LOGICAL)
+                            Incompatibilidade ("Expressao nao logica em comando enquanto");
+                    }
+				    FPAR  PVIRG {printf (") ;\n");}
                 ;
 CmdPara	    	:   PARA  {printf ("para ");}  Variavel 
                     {
@@ -330,14 +339,17 @@ CmdPara	    	:   PARA  {printf ("para ");}  Variavel
 CmdLer   	    :   LER  ABPAR  {printf ("ler ( ");}  ListLeit  FPAR  PVIRG
                     {printf (") ;\n");}
                 ;
-ListLeit		:   Variavel  |  ListLeit  VIRG  {printf (", ");}  Variavel
+ListLeit		:   Variavel {if  ($1 != NULL) $1->inic = $1->ref = TRUE;} 
+				|  ListLeit  VIRG  {printf (", ");}  Variavel Variavel  {if  ($4 != NULL) $4->inic = $4->ref = TRUE;}
                 ;
 CmdEscrever   	:	ESCREVER  ABPAR  {printf ("escrever ( ");}  ListEscr  FPAR
                     PVIRG  {printf (") ;\n");}
                 ;
-ListEscr		:	ElemEscr  |  ListEscr  VIRG  {printf (", ");}  ElemEscr
+ListEscr		:	ElemEscr  
+				|  ListEscr  VIRG  {printf (", ");}  ElemEscr
                 ;
-ElemEscr		:   CADEIA  {printf ("\"%s\" ", $1);}  |  Expressao
+ElemEscr		:   CADEIA  {printf ("\"%s\" ", $1);}  
+				|  Expressao
                 ;
 ChamadaProc   	:	CHAMAR  ID {printf ("chamar %s ", $2);}  
                     ABPAR  {printf ("(");} Argumentos 
@@ -346,7 +358,8 @@ ChamadaProc   	:	CHAMAR  ID {printf ("chamar %s ", $2);}
 Argumentos    	:
                 |  ListExpr
                 ;
-CmdRetornar  	:	RETORNAR  PVIRG  {printf ("retornar ; ");} |  RETORNAR  {printf ("retornar ");}  
+CmdRetornar  	:	RETORNAR  PVIRG  {printf ("retornar ; ");} 
+				|   RETORNAR  {printf ("retornar ");}  
                     Expressao  PVIRG  {printf (";\n");}
                 ;
 
@@ -366,19 +379,22 @@ CmdAtrib      	:   Variavel  {if  ($1 != NULL) $1->inic = $1->ref = TRUE;}
 ListExpr		:  	Expressao
                 |   ListExpr  VIRG  {printf (", ");}  Expressao
                 ;
-Expressao     	:   ExprAux1  |  Expressao  OR  {printf ("|| ");}  ExprAux1  {
+Expressao     	:   ExprAux1  
+				|   Expressao  OR  {printf ("|| ");}  ExprAux1  {
                         if ($1 != LOGICAL || $4 != LOGICAL)
                             Incompatibilidade ("Operando improprio para operador or");
                         $$ = LOGICAL;
                     }
                 ;
-ExprAux1    	:   ExprAux2  |  ExprAux1  AND  {printf ("&& ");}  ExprAux2  {
+ExprAux1    	:   ExprAux2  
+				|   ExprAux1  AND  {printf ("&& ");}  ExprAux2  {
                         if ($1 != LOGICAL || $4 != LOGICAL)
                             Incompatibilidade ("Operando improprio para operador and");
                         $$ = LOGICAL;
                     }
                 ;
-ExprAux2    	:   ExprAux3  |  NOT  {printf ("! ");}  ExprAux3  {
+ExprAux2    	:   ExprAux3  
+				|   NOT  {printf ("! ");}  ExprAux3  {
                         if ($3 != LOGICAL)
                             Incompatibilidade ("Operando improprio para operador not");
                         $$ = LOGICAL;
@@ -468,20 +484,45 @@ Fator		    :   Variavel  {
                     {printf (") "); $$ = $3;}
                 |   ChamadaFunc
                 ;
+				
 Variavel		:   ID  {
                         printf ("%s ", $1);
                         simb = ProcuraSimb ($1);
                         if (simb == NULL)   NaoDeclarado ($1);
                         else if (simb->tid != IDVAR)   TipoInadequado ($1);
                         $<simb>$ = simb;
-                    }  Subscritos  {$$ = $<simb>2;}
+                    }  
+					Subscritos  {
+						$$ = $<simb>2;
+                        if ($$!= NULL) {
+                            if ($$->array == FALSE && $3 > 0)
+                                NaoEsperado ("Subscrito\(s)");
+                            else if ($$->array == TRUE && $3 == 0)
+                                Esperado ("Subscrito\(s)");
+                            else if ($$->ndims != $3)
+                                Incompatibilidade ("Numero de subscritos incompativel com declaracao");
+                        }
+					}
                 ;
-Subscritos      :
+Subscritos      :	{$$ = 0;}
                 |   ABCOL  {printf ("[ ");}  ListSubscr
-                    FCOL  {printf ("] ");}
+                    FCOL  {
+						printf ("] ");
+						$$ = $3;
+					}
                 ;
-ListSubscr  	:   ExprAux4
-                |   ListSubscr  VIRG  {printf (", ");}  ExprAux4
+ListSubscr  	:   ExprAux4 
+					{
+						if ($1 != INTEGER && $1 != CHAR)
+							Incompatibilidade ("Tipo inadequado para subscrito");
+						$$ = 1;
+					}
+                |   ListSubscr  VIRG  {printf (", ");}  ExprAux4 
+					{
+						if ($4 != INTEGER && $4 != CHAR)
+							Incompatibilidade ("Tipo inadequado para subscrito");
+						$$ = $1 + 1;
+					}
                 ;
 ChamadaFunc     :   ID  {
                         printf ("%s ", $1);
@@ -572,6 +613,7 @@ void ImprimeTabSimb () {
 			}
 		}
 }
+
 
 void VerificaInicRef () {
 	int i; simbolo s;
