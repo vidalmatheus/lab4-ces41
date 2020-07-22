@@ -27,3 +27,9 @@
 17) Módulos não são usados como parâmetros ou argumentos de chamada de outros módulos (olhar o tid)
 
 18) A linguagem não admite recursividade. (if ($<num>->cadeia == $<num>->escopo->cadeia) É recursão!)
+
+How to Run:
+flex tsimb012020.l
+yacc tsimb012020.y
+.\gcc.exe y.tab.c main.c yyerror.c -o tsimb012020 -lfl
+Get-Content .\tsimb012020.dat | .\tsimb012020.exe > tsimb012020.txt
