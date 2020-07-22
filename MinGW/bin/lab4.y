@@ -21,11 +21,12 @@
 
 /*   Definicao dos tipos de identificadores   */
 
-#define IDGLOB		1
+#define IDPROG		1
 #define IDVAR		2
 #define IDFUNC		3
 #define IDPROC		4
-#define IDPROG		5
+#define IDGLOB		5
+#define IDPRINCIPAL 6
 
 /*  Definicao dos tipos de variaveis   */
 
@@ -44,7 +45,7 @@
 
 /*  Strings para nomes dos tipos de identificadores  */
 
-char *nometipid[5] = {" ", "IDPROG", "IDVAR", "IDFUNC", "IDPROC"};
+char *nometipid[7] = {" ", "IDPROG", "IDVAR", "IDFUNC", "IDPROC", "IDGLOB", "IDPRINCIPAL"};
 
 /*  Strings para nomes dos tipos de variaveis  */
 
@@ -56,23 +57,23 @@ char *nometipvar[5] = {"NOTVAR",
 
 typedef struct celsimb celsimb;
 typedef celsimb *simbolo;
+typedef struct elemlistsimb elemlistsimb;
+typedef elemlistsimb *pontelemlistsimb;
+typedef elemlistsimb *listsimb;
 struct celsimb {
 	char *cadeia;
 	int tid, tvar, tparam, ndims, dims[MAXDIMS+1], nparams;
 	char inic, ref, array, parametro;
-    // listsimb listvar, listparam, listfunc; 
+    listsimb listvar, listparam, listfunc; 
 	simbolo escopo, prox;
 };
 
-// /*  Listas de simbolos  */
+/*  Listas de simbolos  */
 
-// typedef struct elemlistsimb elemlistsimb;
-// typedef elemlistsimb *pontelemlistsimb;
-// typedef elemlistsimb *listsimb;
-// struct elemlistsimb {
-// 	simbolo simb; 
-// 	pontelemlistsimb prox;
-// };
+struct elemlistsimb {
+	simbolo simb; 
+	pontelemlistsimb prox;
+};
 
 /*  Variaveis globais para a tabela de simbolos e analise semantica */
 
@@ -89,9 +90,9 @@ simbolo escopo;
 
 void InicTabSimb (void);
 void ImprimeTabSimb (void);
-simbolo InsereSimb (char *, int, int);
+simbolo InsereSimb (char *, int, int, simbolo);
 int hash (char *);
-simbolo ProcuraSimb (char *);
+simbolo ProcuraSimb (char *, simbolo);
 void VerificaInicRef (void);
 void DeclaracaoRepetida (char *);
 void TipoInadequado (char *);
@@ -183,12 +184,12 @@ struct infovariavel {
 	Os terminais sao escritos e, depois de alguns,
 	para alguma estetica, ha mudanca de linha       */
 
-Prog			:	{InicTabSimb ();}  PROGRAMA  ID  ABTRIP
-                    {printf ("programa %s {{{\n", $3); InsereSimb ($3, IDPROG, NOTVAR);}
+Prog			:	{InicTabSimb ();}  PROGRAMA  ID {escopo = InsereSimb ("##global", IDGLOB, NOTVAR, NULL);} ABTRIP
+                    {printf ("programa %s {{{\n", $3); InsereSimb ($3, IDPROG, NOTVAR,escopo);}
                     Decls ListMod ModPrincipal FTRIP  {printf ("}}}\n");
                     VerificaInicRef ();
                     ImprimeTabSimb ();
-                    /*escopo = InsereSimb (“##global”, IDGLOB, NOTVAR, NULL);*/}
+                    }
                 ;
 				
 Decls 		    :
@@ -214,10 +215,10 @@ ListElem    	:	Elem  |  ListElem  VIRG  {printf (", ");}  Elem
 				
 Elem        	:	ID  {
                         printf ("%s ", $1);
-                        if  (ProcuraSimb ($1)  !=  NULL)
+                        if  (ProcuraSimb ($1, escopo)  !=  NULL)
                             DeclaracaoRepetida ($1);
                         else
-                            simb = InsereSimb ($1,  IDVAR,  tipocorrente);
+                            simb = InsereSimb ($1,  IDVAR,  tipocorrente, escopo);
 							simb->array = FALSE; simb->ndims = 0;
                     }  Dims
                 ;
@@ -254,24 +255,25 @@ Cabecalho     	:   CabFunc
                 ;
 				
 CabFunc	    	:   FUNCAO {printf ("funcao ");} Tipo  
-                    ID  {
+                    ID    
+                    {
                         printf ("%s ", $4);
-                        if  (ProcuraSimb ($4)  !=  NULL)
+                        if  (ProcuraSimb ($4, escopo)  !=  NULL)
                             DeclaracaoRepetida ($4);
                         else
-                            InsereSimb ($4,  IDVAR,  tipocorrente);
+                            escopo = InsereSimb ($4,  IDFUNC,  tipocorrente, escopo);
                     }  ABPAR  {printf ("( ");}  ListParam FPAR  {printf (") ");}
                 ;
 				
 CabProc	    	:   PROCEDIMENTO {printf ("procedimento ");}   
-                    ID  {
+                    ID     
+                    {
                         printf ("%s ", $3);
 
-                        if  (ProcuraSimb ($3)  !=  NULL)
+                        if  (ProcuraSimb ($3, escopo)  !=  NULL)
                             DeclaracaoRepetida ($3);
-                        /*
                         else
-                            InsereSimb ($3,  IDPROC,  tipocorrente);*/
+                            escopo = InsereSimb ($3,  IDPROC,  tipocorrente, escopo);
                     }  ABPAR  {printf ("( ");}  ListParam FPAR  {printf (")\n");}
                 ;
 				
@@ -282,15 +284,15 @@ Parametro   	:
 				|	Tipo  
                     ID  {
                         printf ("%s ", $2);
-                        if  (ProcuraSimb ($2)  !=  NULL)
+                        if  (ProcuraSimb ($2, escopo)  !=  NULL)
                             DeclaracaoRepetida ($2);
                         else
-                            InsereSimb ($2,  IDVAR,  tipocorrente);
+                            InsereSimb ($2,  IDVAR,  tipocorrente, escopo);
                     }
                 ;  
 Corpo     	    :   Decls  Comandos
                 ;
-ModPrincipal  	:   PRINCIPAL {printf ("principal\n");}  Corpo
+ModPrincipal  	:   PRINCIPAL {escopo = InsereSimb ("##principal", IDPRINCIPAL, tipocorrente, escopo);} {printf ("principal\n");}  Corpo
                 ;
 Comandos       	:   COMANDOS  {printf ("comandos ");}  CmdComp
                 ;
@@ -487,7 +489,7 @@ Fator		    :   Variavel  {
 				
 Variavel		:   ID  {
                         printf ("%s ", $1);
-                        simb = ProcuraSimb ($1);
+                        simb = ProcuraSimb ($1, escopo);
                         if (simb == NULL)   NaoDeclarado ($1);
                         else if (simb->tid != IDVAR)   TipoInadequado ($1);
                         $<simb>$ = simb;
@@ -499,8 +501,8 @@ Variavel		:   ID  {
                                 NaoEsperado ("Subscrito\(s)");
                             else if ($$->array == TRUE && $3 == 0)
                                 Esperado ("Subscrito\(s)");
-                            else if ($$->ndims != $3)
-                                Incompatibilidade ("Numero de subscritos incompativel com declaracao");
+                            /*else if ($$->ndims != $3)
+                                Incompatibilidade ("Numero de subscritos incompativel com declaracao");*/
                         }
 					}
                 ;
@@ -526,7 +528,7 @@ ListSubscr  	:   ExprAux4
                 ;
 ChamadaFunc     :   ID  {
                         printf ("%s ", $1);
-                        simb = ProcuraSimb ($1);
+                        simb = ProcuraSimb ($1, escopo);
                         if (simb == NULL)   NaoDeclarado ($1);
                         else if (simb->tid != IDVAR)   TipoInadequado ($1);
                         $<simb>$ = simb;
@@ -551,12 +553,14 @@ void InicTabSimb () {
 	Caso contrario, retorna NULL.
  */
 
-simbolo ProcuraSimb (char *cadeia) {
+simbolo ProcuraSimb (char *cadeia, simbolo escopo) {
 	simbolo s; int i;
 	i = hash (cadeia);
-	for (s = tabsimb[i]; (s!=NULL) && strcmp(cadeia, s->cadeia);
-		s = s->prox);
-	return s;
+	for (s = tabsimb[i]; (s!=NULL);s = s->prox){
+        if (strcmp(cadeia, s->cadeia) == 0 && s->escopo == escopo)
+            return s;
+    }
+    return NULL;
 }
 
 /*
@@ -565,7 +569,7 @@ simbolo ProcuraSimb (char *cadeia) {
 	tipo de variavel; Retorna um ponteiro para a celula inserida
  */
 
-simbolo InsereSimb (char *cadeia, int tid, int tvar/*, simbolo escopo*/) {
+simbolo InsereSimb (char *cadeia, int tid, int tvar, simbolo escopo) {
 	int i; simbolo aux, s;
 	i = hash (cadeia); aux = tabsimb[i];
 	s = tabsimb[i] = (simbolo) malloc (sizeof (celsimb));
@@ -573,7 +577,7 @@ simbolo InsereSimb (char *cadeia, int tid, int tvar/*, simbolo escopo*/) {
 	strcpy (s->cadeia, cadeia);
 	s->tid = tid;		s->tvar = tvar;
 	s->inic = FALSE;	s->ref = FALSE;
-	s->prox = aux;	    /*s->escopo = escopo;*/
+	s->prox = aux;	    s->escopo = escopo;
     return s;
 }
 
@@ -624,9 +628,9 @@ void VerificaInicRef () {
 			for (s = tabsimb[i]; s!=NULL; s = s->prox)
 				if (s->tid == IDVAR) {
 					if (s->inic == FALSE)
-						printf ("%s: Nao Inicializada\n", s->cadeia);
+						printf ("[%10s] %10s:   Nao Inicializada\n", s->escopo->cadeia, s->cadeia);
 					if (s->ref == FALSE)
-						printf ("%s: Nao Referenciada\n", s->cadeia);
+						printf ("[%10s] %10s:   Nao Referenciada\n", s->escopo->cadeia, s->cadeia);
 				}
 }
 
