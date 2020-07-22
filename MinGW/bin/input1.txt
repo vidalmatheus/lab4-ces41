@@ -1,0 +1,34 @@
+programa HelloWorld {{{
+    /* Isto é um comentário ! */
+    var {
+        carac (nome)
+    }
+    procedimento Hello (carac nome)
+    comandos {
+            escrever ("Hello, ", nome); 
+    } /* fim do procedimento Hello */
+
+    funcao carac Hello2 (carac nome)
+    comandos {
+            escrever ("Hello, ", nome); 
+            retornar nome;
+    } /* fim do procedimento Hello */
+
+    principal
+    var {
+        carac (nome[15],a)
+        int (i, v[10])
+    }
+    comandos {
+        a = 'b';
+        para i (0;i<10;i+1) {
+            v[i] = i;
+        }
+
+        nome[20] = 'a';
+
+        escrever ("Qual seu nome?: ");
+        ler(nome[15]);
+        
+    }
+}}}
