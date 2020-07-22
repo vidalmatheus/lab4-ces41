@@ -1,4 +1,5 @@
 # lab4-ces41
+## To do list:
 
 1) CmdPara -> variáveis locais
 2) Escopo -> subprogramas
@@ -28,8 +29,12 @@
 
 18) A linguagem não admite recursividade. (if ($<num>->cadeia == $<num>->escopo->cadeia) É recursão!)
 
-How to Run:
-flex tsimb012020.l
-yacc tsimb012020.y
-.\gcc.exe y.tab.c main.c yyerror.c -o tsimb012020 -lfl
-Get-Content .\tsimb012020.dat | .\tsimb012020.exe > tsimb012020.txt
+
+# How to Run:
+```
+flex lab4.l
+yacc lab4.y
+.\gcc.exe y.tab.c main.c yyerror.c -o lab4 -lfl
+Get-Content input.txt | lab4.exe > output.txt
+```
+
