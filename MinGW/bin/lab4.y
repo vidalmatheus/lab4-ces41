@@ -21,8 +21,18 @@
 
 /*   Definicao dos tipos de identificadores   */
 
-#define 	IDPROG		1
-#define 	IDVAR		2
+#define     IDGLOB		1
+#define     IDVAR		2
+#define     IDFUNC		3
+#define     IDPROC		4
+#define     IDPROG		5
+#define     IDBLOC		6
+
+/*  Definicao dos tipos de 
+	passagem de parametros  */
+
+#define     PARAMVAL	1
+#define     PARAMREF	2
 
 /*  Definicao dos tipos de variaveis   */
 
@@ -41,7 +51,7 @@
 
 /*  Strings para nomes dos tipos de identificadores  */
 
-char *nometipid[3] = {" ", "IDPROG", "IDVAR"};
+char *nometipid[5] = {" ", "IDPROG", "IDVAR", "IDFUNC", "IDPROC"};
 
 /*  Strings para nomes dos tipos de variaveis  */
 
@@ -55,16 +65,29 @@ typedef struct celsimb celsimb;
 typedef celsimb *simbolo;
 struct celsimb {
 	char *cadeia;
-	int tid, tvar, ndims, dims[MAXDIMS+1], nparams;
-	char inic, ref, array;
-	simbolo prox;
+	int tid, tvar, tparam, ndims, dims[MAXDIMS+1], nparams;
+	char inic, ref, array, parametro;
+    // listsimb listvar, listparam, listfunc; 
+	simbolo escopo, prox;
 };
+
+// /*  Listas de simbolos  */
+
+// typedef struct elemlistsimb elemlistsimb;
+// typedef elemlistsimb *pontelemlistsimb;
+// typedef elemlistsimb *listsimb;
+// struct elemlistsimb {
+// 	simbolo simb; 
+// 	pontelemlistsimb prox;
+// };
 
 /*  Variaveis globais para a tabela de simbolos e analise semantica */
 
 simbolo tabsimb[NCLASSHASH];
 simbolo simb;
 int tipocorrente;
+int nparams_call;
+simbolo escopo;
 
 /*
 	Prototipos das funcoes para a tabela de simbolos
@@ -86,17 +109,17 @@ void NaoEsperado (char *);
 
 /* Declaracoes para atributos das expressoes e variaveis */
 
-typedef struct infoexpressao infoexpressao;
-struct infoexpressao {
-	int tipo;
-	operando opnd;
-};
+// typedef struct infoexpressao infoexpressao;
+// struct infoexpressao {
+// 	int tipo;
+// 	operando opnd;
+// };
 
-typedef struct infovariavel infovariavel;
-struct infovariavel {
-	simbolo simb;
-	operando opnd;
-};
+// typedef struct infovariavel infovariavel;
+// struct infovariavel {
+// 	simbolo simb;
+// 	operando opnd;
+// };
 
 %}
 
@@ -109,7 +132,8 @@ struct infovariavel {
 	char carac;
 	simbolo simb;
 	int tipoexpr;
-    int nparams_call;
+    // infoexpressao infoexpr;
+	// infovariavel infovar;
 }
 
 /* Declaracao dos atributos dos tokens e dos nao-terminais */
@@ -172,7 +196,8 @@ Prog			:	{InicTabSimb ();}  PROGRAMA  ID  ABTRIP
                     {printf ("programa %s {{{\n", $3); InsereSimb ($3, IDPROG, NOTVAR);}
                     Decls ListMod ModPrincipal FTRIP  {printf ("}}}\n");
                     VerificaInicRef ();
-                    ImprimeTabSimb ();}
+                    ImprimeTabSimb ();
+                    /*escopo = InsereSimb (“##global”, IDGLOB, NOTVAR, NULL);*/}
                 ;
 Decls 		    :
                 |   VAR  ABCHAV  {printf ("var {\n");}  ListDecl
@@ -238,7 +263,7 @@ CabProc	    	:   PROCEDIMENTO {printf ("procedimento ");}
                             DeclaracaoRepetida ($3);
                         /*
                         else
-                            InsereSimb ($3,  IDVAR,  tipocorrente);*/
+                            InsereSimb ($3,  IDPROC,  tipocorrente);*/
                     }  ABPAR  {printf ("( ");}  ListParam FPAR  {printf (")\n");}
                 |   PROCEDIMENTO {printf ("procedimento ");} 
                     ID  {
@@ -291,7 +316,15 @@ CmdRepetir  	:   REPETIR {printf ("repetir ");} Comando
                 |   ENQUANTO  ABPAR {printf ("enquanto ( ");}  Expressao  
 				|   FPAR  PVIRG {printf (") ;\n");}
                 ;
-CmdPara	    	:   PARA  {printf ("para ");}  Variavel {if  ($3 != NULL) $3->inic = $3->ref = TRUE;} ABPAR {printf ("( ");} ExprAux4  
+CmdPara	    	:   PARA  {printf ("para ");}  Variavel 
+                    {
+                        if  ($3 != NULL){
+                            $3->inic = $3->ref = TRUE;
+                            if ($3->tvar != INTEGER && $3->tvar != CHAR)
+                                Esperado ("Valor interiro ou caractere");
+                        }
+                    }
+                    ABPAR {printf ("( ");} ExprAux4  
                     PVIRG {printf ("; ");} Expressao  PVIRG {printf ("; ");} ExprAux4  FPAR {printf (") ");} Comando
                 ;
 CmdLer   	    :   LER  ABPAR  {printf ("ler ( ");}  ListLeit  FPAR  PVIRG
@@ -306,8 +339,9 @@ ListEscr		:	ElemEscr  |  ListEscr  VIRG  {printf (", ");}  ElemEscr
                 ;
 ElemEscr		:   CADEIA  {printf ("\"%s\" ", $1);}  |  Expressao
                 ;
-ChamadaProc   	:	CHAMAR  ID  {printf ("chamar %s ", $2);}  
-                    ABPAR  {printf ("(");} {nparams_call=0} Argumentos {if($2.simb->nparams != nparams_call) Esperado("Mesma quantidade de parametros")}  FPAR  PVIRG  {printf (") ;\n");}  
+ChamadaProc   	:	CHAMAR  ID {printf ("chamar %s ", $2);}  
+                    ABPAR  {printf ("(");} Argumentos 
+                    FPAR  PVIRG  {printf (") ;\n");}  
                 ;
 Argumentos    	:
                 |  ListExpr
@@ -490,7 +524,7 @@ simbolo ProcuraSimb (char *cadeia) {
 	tipo de variavel; Retorna um ponteiro para a celula inserida
  */
 
-simbolo InsereSimb (char *cadeia, int tid, int tvar) {
+simbolo InsereSimb (char *cadeia, int tid, int tvar/*, simbolo escopo*/) {
 	int i; simbolo aux, s;
 	i = hash (cadeia); aux = tabsimb[i];
 	s = tabsimb[i] = (simbolo) malloc (sizeof (celsimb));
@@ -498,7 +532,8 @@ simbolo InsereSimb (char *cadeia, int tid, int tvar) {
 	strcpy (s->cadeia, cadeia);
 	s->tid = tid;		s->tvar = tvar;
 	s->inic = FALSE;	s->ref = FALSE;
-	s->prox = aux;	return s;
+	s->prox = aux;	    /*s->escopo = escopo;*/
+    return s;
 }
 
 /*
@@ -523,9 +558,16 @@ void ImprimeTabSimb () {
 			printf ("Classe %d:\n", i);
 			for (s = tabsimb[i]; s!=NULL; s = s->prox){
 				printf ("  (%s, %s", s->cadeia,  nometipid[s->tid]);
-				if (s->tid == IDVAR)
+				if (s->tid == IDVAR) {
 					printf (", %s, %d, %d",
 						nometipvar[s->tvar], s->inic, s->ref);
+                    if (s->array == TRUE) {
+                        int j;
+                        printf (", EH ARRAY\n\tndims = %d, dimensoes:", s->ndims);
+						for (j = 1; j <= s->ndims; j++)
+                            printf ("  %d", s->dims[j]);
+					}
+                }
 				printf(")\n");
 			}
 		}
