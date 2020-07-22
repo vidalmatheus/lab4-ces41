@@ -1,0 +1,15 @@
+programa HelloWorld {{{
+    /* Isto é um comentário ! */
+    procedimento Hello (carac name)
+    comandos {
+            escrever ("Hello, ", name); 
+    } /* fim do procedimento Hello */
+
+    principal
+    var {carac (name[20])}
+    comandos {
+        escrever ("Qual seu nome?: ");
+        ler(name);
+        chamar Hello(name);
+    }
+}}}
