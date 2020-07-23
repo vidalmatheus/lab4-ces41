@@ -64,7 +64,7 @@ struct celsimb {
 	char *cadeia;
 	int tid, tvar, tparam, ndims, dims[MAXDIMS+1], nparams;
 	char inic, ref, array, parametro;
-    listsimb listvar, listparam, listfunc; 
+    listsimb listparam;
 	simbolo escopo, prox;
 };
 
@@ -82,6 +82,7 @@ simbolo simb;
 int tipocorrente;
 int nparams_call;
 simbolo escopo;
+listsimb listargs;
 
 /*
 	Prototipos das funcoes para a tabela de simbolos
@@ -101,17 +102,17 @@ void Incompatibilidade (char *);
 void Esperado (char *);
 void NaoEsperado (char *);
 
-/* Declaracoes para atributos das expressoes e variaveis */
+// /* Declaracoes para atributos das expressoes e variaveis */
 
-typedef struct infoexpressao infoexpressao;
-struct infoexpressao {
-	int tipo;
-};
+// typedef struct infoexpressao infoexpressao;
+// struct infoexpressao {
+// 	int tipo;
+// };
 
-typedef struct infovariavel infovariavel;
-struct infovariavel {
-	simbolo simb;
-};
+// typedef struct infovariavel infovariavel;
+// struct infovariavel {
+// 	simbolo simb;
+// };
 
 %}
 
@@ -264,7 +265,11 @@ CabFunc	    	:   FUNCAO {printf ("funcao ");} Tipo
                             DeclaracaoRepetida ($4);
                         else
                             escopo = InsereSimb ($4,  IDFUNC,  tipocorrente, escopo);
-                    }  ABPAR  {printf ("( ");}  ListParam FPAR  {printf (") ");}
+                    }  ABPAR  {printf ("( ");}  ListParam 
+                    {
+                        /*isParamsOk($8);*/
+                    }
+                    FPAR  {printf (") ");}
                 ;
 				
 CabProc	    	:   PROCEDIMENTO {printf ("procedimento ");}   
@@ -277,7 +282,11 @@ CabProc	    	:   PROCEDIMENTO {printf ("procedimento ");}
                             DeclaracaoRepetida ($3);
                         else
                             escopo = InsereSimb ($3,  IDPROC,  tipocorrente, escopo);
-                    }  ABPAR  {printf ("( ");}  ListParam FPAR  {printf (")\n");}
+                    }  ABPAR  {printf ("( ");}  ListParam 
+                    {
+                        /*isParamsOk($7);*/
+                    }
+                    FPAR  {printf (")\n");}
                 ;
 				
 ListParam   	: 	Parametro  
@@ -287,10 +296,16 @@ Parametro   	:
 				|	Tipo  
                     ID  {
                         printf ("%s ", $2);
+                        simb = ProcuraSimb ($2, escopo->escopo);
+                        if (simb != NULL && simb->tid != IDVAR)
+                            NaoEsperado("Chamada de modulo externo como parametro");
                         if  (ProcuraSimb ($2, escopo)  !=  NULL)
                             DeclaracaoRepetida ($2);
-                        else
-                            InsereSimb ($2,  IDVAR,  tipocorrente, escopo);
+                        else{
+                            simb = InsereSimb ($2,  IDVAR,  tipocorrente, escopo);
+                            simb->inic = TRUE;
+                            simb->ref = TRUE;
+                        }
                     }
                 ;  
 Corpo     	    :   Decls  Comandos
@@ -369,15 +384,31 @@ ElemEscr		:   CADEIA  {printf ("\"%s\" ", $1);}
 				|  Expressao
                 ;
 ChamadaProc   	:	CHAMAR  ID {printf ("chamar %s ", $2);}  
+                    {
+                        simb = ProcuraSimb ($2, escopo);
+                        if (simb == NULL)   NaoDeclarado ($2);
+                        else if (simb->tid != IDPROC)   TipoInadequado ($2);
+                        $<simb>$ = simb;
+                    }
                     ABPAR  {printf ("(");} Argumentos 
                     FPAR  PVIRG  {printf (") ;\n");}  
                 ;
 Argumentos    	:
-                |  ListExpr
+                |  ListExpr {/*setArgs($1);*/}
                 ;
-CmdRetornar  	:	RETORNAR  PVIRG  {printf ("retornar ; ");} 
+CmdRetornar  	:	RETORNAR  PVIRG {printf ("retornar ; ");}
+                {
+                    if (escopo->tid == IDFUNC)
+                        Esperado("Identificador de funcao");
+                }
 				|   RETORNAR  {printf ("retornar ");}  
-                    Expressao  PVIRG  {printf (";\n");}
+                    Expressao
+                    {
+                        if (escopo->tid == IDPROC)
+                            NaoEsperado("Identificador para procedimento");
+                        if (escopo->tvar != $3)
+                            Incompatibilidade("Tipo de valor retornado");
+                    }  PVIRG  {printf (";\n");}
                 ;
 
 CmdAtrib      	:   Variavel  {if  ($1 != NULL) $1->inic = $1->ref = TRUE;}
@@ -516,8 +547,8 @@ Variavel		:   ID  {
                                 NaoEsperado ("Subscrito\(s)");
                             else if ($$->array == TRUE && $3 == 0)
                                 Esperado ("Subscrito\(s)");
-                            /*else if ($$->ndims != $3)
-                                Incompatibilidade ("Numero de subscritos incompativel com declaracao");*/
+                            else if ($$->ndims != $3)
+                                Incompatibilidade ("Numero de subscritos incompativel com declaracao");
                         }
 					}
                 ;
@@ -543,9 +574,11 @@ ListSubscr  	:   ExprAux4
                 ;
 ChamadaFunc     :   ID  {
                         printf ("%s ", $1);
+                        if (strcmp($1,escopo->cadeia) == 0)
+                            NaoEsperado("Recursao nao e possivel nesta linguagem");
                         simb = ProcuraSimb ($1, escopo);
                         if (simb == NULL)   NaoDeclarado ($1);
-                        else if (simb->tid != IDVAR)   TipoInadequado ($1);
+                        else if (simb->tid != IDFUNC)   TipoInadequado ($1);
                         $<simb>$ = simb;
                     }  ABPAR  {printf ("(");}  Argumentos  FPAR  {printf (") ");}
 %%
