@@ -5,30 +5,33 @@ programa HelloWorld {{{
     }
     procedimento Hello (carac nome)
     comandos {
-            escrever ("Hello, ", nome); 
+            escrever ("Hello, "); 
+            retornar nome;
     } /* fim do procedimento Hello */
 
-    funcao carac Hello2 (carac nome)
+    funcao carac Hello2 (carac nome, carac x)
     comandos {
             escrever ("Hello, ", nome); 
-            retornar nome;
+            retornar Hello2(nome,a);
     } /* fim do procedimento Hello */
 
     principal
     var {
-        carac (nome[15],a)
+        carac (nome[15],a,b)
         int (i, v[10])
     }
     comandos {
         a = 'b';
-        para i (0;i<10;i+1) {
+        para i (1.2;i;i) {
             v[i] = i;
         }
-
+        
+        chamar Hello();
+        a = Hello2(nome,b);
+        a = Hello2(nome,i);
         nome[20] = 'a';
 
         escrever ("Qual seu nome?: ");
-        ler(nome[15]);
-        
+        ler(nome[15]); 
     }
 }}}
