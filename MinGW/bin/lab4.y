@@ -581,7 +581,7 @@ ListSubscr  	:   ExprAux4
 					{
 						if ($4 != INTEGER && $4 != CHAR)
 							Incompatibilidade ("Tipo inadequado para subscrito");
-						$$ = $1 + 1; 
+						$$ = $1 + 1;
 						if($$ > MAXDIMS)
 							Incompatibilidade ("Ultrapassou o maximo de dimensoes");
 					}
@@ -678,7 +678,14 @@ void ImprimeTabSimb () {
                             printf ("  %d", s->dims[j]);
 					}
                 }
-				printf(")\n");
+
+				if (s->tid == IDFUNC){
+					printf(", %s", nometipvar[s->tvar]);
+				}
+				if (s->escopo != NULL){
+					printf(", %s)\n", s->escopo->cadeia);
+				}
+				else printf(")\n");
 			}
 		}
 }
