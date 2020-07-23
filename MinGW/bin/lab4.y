@@ -258,7 +258,9 @@ CabFunc	    	:   FUNCAO {printf ("funcao ");} Tipo
                     ID    
                     {
                         printf ("%s ", $4);
-                        if  (ProcuraSimb ($4, escopo)  !=  NULL)
+                        if ($4 == "principal")
+                            NaoEsperado("Outro modulo de cabecalho principal");
+                        else if  (ProcuraSimb ($4, escopo)  !=  NULL)
                             DeclaracaoRepetida ($4);
                         else
                             escopo = InsereSimb ($4,  IDFUNC,  tipocorrente, escopo);
@@ -269,8 +271,9 @@ CabProc	    	:   PROCEDIMENTO {printf ("procedimento ");}
                     ID     
                     {
                         printf ("%s ", $3);
-
-                        if  (ProcuraSimb ($3, escopo)  !=  NULL)
+                        if ($3 == "principal")
+                            NaoEsperado("Outro modulo de cabecalho principal");
+                        else if  (ProcuraSimb ($3, escopo)  !=  NULL)
                             DeclaracaoRepetida ($3);
                         else
                             escopo = InsereSimb ($3,  IDPROC,  tipocorrente, escopo);
@@ -335,8 +338,20 @@ CmdPara	    	:   PARA  {printf ("para ");}  Variavel
                                 Esperado ("Valor interiro ou caractere");
                         }
                     }
-                    ABPAR {printf ("( ");} ExprAux4  
-                    PVIRG {printf ("; ");} Expressao  PVIRG {printf ("; ");} ExprAux4  FPAR {printf (") ");} Comando
+                    ABPAR {printf ("( ");} ExprAux4
+                    {
+                        if ($7 != INTEGER && $7 != CHAR)
+                            Incompatibilidade ("Expressao do tipo nao inteira e nao caractere em comando para");
+                    }
+                    PVIRG {printf ("; ");} Expressao
+                    {
+                        if ($11 != LOGICAL)
+                            Incompatibilidade ("Expressao do tipo nao logica em comando para");
+                    }  PVIRG {printf ("; ");} ExprAux4
+                    {
+                        if ($15 != INTEGER && $15 != CHAR)
+                            Incompatibilidade ("Expressao do tipo nao inteira e nao caractere em comando para");
+                    }  FPAR {printf (") ");} Comando
                 ;
 CmdLer   	    :   LER  ABPAR  {printf ("ler ( ");}  ListLeit  FPAR  PVIRG
                     {printf (") ;\n");}
