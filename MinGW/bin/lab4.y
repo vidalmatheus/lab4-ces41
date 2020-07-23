@@ -81,7 +81,7 @@ simbolo tabsimb[NCLASSHASH];
 simbolo simb;
 int tipocorrente;
 int nparams_call;
-simbolo escopo;
+simbolo escopo, escopoGlobal;
 listsimb listargs;
 
 /*
@@ -101,6 +101,9 @@ void NaoDeclarado (char *);
 void Incompatibilidade (char *);
 void Esperado (char *);
 void NaoEsperado (char *);
+void addToList(listsimb*, int, int);
+void isParamsOk(listsimb, listsimb);
+
 
 // /* Declaracoes para atributos das expressoes e variaveis */
 
@@ -126,6 +129,7 @@ void NaoEsperado (char *);
 	simbolo simb;
 	int tipoexpr;
 	int nsubscr;
+    listsimb listparam;
 }
 
 /* Declaracao dos atributos dos tokens e dos nao-terminais */
@@ -134,6 +138,7 @@ void NaoEsperado (char *);
 %type 	    <tipoexpr> 	    Expressao  ExprAux1  ExprAux2
                             ExprAux3   ExprAux4   Termo   Fator
 %type 		<nsubscr>		Subscritos ListSubscr
+%type       <params>        ListParam
 %token		<cadeia>		ID
 %token		<carac>		    CTCARAC
 %token		<cadeia>		CADEIA
@@ -185,7 +190,7 @@ void NaoEsperado (char *);
 	Os terminais sao escritos e, depois de alguns,
 	para alguma estetica, ha mudanca de linha       */
 
-Prog			:	{InicTabSimb ();}  PROGRAMA  ID {escopo = InsereSimb ("##global", IDGLOB, NOTVAR, NULL);} ABTRIP
+Prog			:	{InicTabSimb ();}  PROGRAMA  ID {escopo = escopoGlobal = InsereSimb ("##global", IDGLOB, NOTVAR, NULL);} ABTRIP
                     {printf ("programa %s {{{\n", $3); InsereSimb ($3, IDPROG, NOTVAR,escopo);}
                     Decls ListMod ModPrincipal FTRIP  {printf ("}}}\n");
                     VerificaInicRef ();
@@ -248,7 +253,7 @@ ListMod 	    :
                 |   ListMod  Modulo
                 ;
 				
-Modulo        	:	Cabecalho  Corpo
+Modulo        	:	Cabecalho  Corpo {escopo = escopo->escopo;}
                 ;
 				
 Cabecalho     	:   CabFunc  
@@ -266,9 +271,6 @@ CabFunc	    	:   FUNCAO {printf ("funcao ");} Tipo
                         else
                             escopo = InsereSimb ($4,  IDFUNC,  tipocorrente, escopo);
                     }  ABPAR  {printf ("( ");}  ListParam 
-                    {
-                        /*isParamsOk($8);*/
-                    }
                     FPAR  {printf (") ");}
                 ;
 				
@@ -283,9 +285,6 @@ CabProc	    	:   PROCEDIMENTO {printf ("procedimento ");}
                         else
                             escopo = InsereSimb ($3,  IDPROC,  tipocorrente, escopo);
                     }  ABPAR  {printf ("( ");}  ListParam 
-                    {
-                        /*isParamsOk($7);*/
-                    }
                     FPAR  {printf (")\n");}
                 ;
 				
@@ -305,6 +304,7 @@ Parametro   	:
                             simb = InsereSimb ($2,  IDVAR,  tipocorrente, escopo);
                             simb->inic = TRUE;
                             simb->ref = TRUE;
+                            addToList(&escopo->listparam,simb->tvar,simb->tid);
                         }
                     }
                 ;  
@@ -385,7 +385,7 @@ ElemEscr		:   CADEIA  {printf ("\"%s\" ", $1);}
                 ;
 ChamadaProc   	:	CHAMAR  ID {printf ("chamar %s ", $2);}  
                     {
-                        simb = ProcuraSimb ($2, escopo);
+                        simb = ProcuraSimb ($2, escopoGlobal);
                         if (simb == NULL)   NaoDeclarado ($2);
                         else if (simb->tid != IDPROC)   TipoInadequado ($2);
                         $<simb>$ = simb;
@@ -394,7 +394,11 @@ ChamadaProc   	:	CHAMAR  ID {printf ("chamar %s ", $2);}
                     FPAR  PVIRG  {printf (") ;\n");}  
                 ;
 Argumentos    	:
-                |  ListExpr {/*setArgs($1);*/}
+                |  {listargs = NULL;} ListExpr
+                {
+                    if (escopo != NULL && escopo->listparam != NULL)
+                        isParamsOk(listargs,escopo->listparam);
+                }
                 ;
 CmdRetornar  	:	RETORNAR  PVIRG {printf ("retornar ; ");}
                 {
@@ -405,8 +409,8 @@ CmdRetornar  	:	RETORNAR  PVIRG {printf ("retornar ; ");}
                     Expressao
                     {
                         if (escopo->tid == IDPROC)
-                            NaoEsperado("Identificador para procedimento");
-                        if (escopo->tvar != $3)
+                            NaoEsperado("Retorno de variavel para procedimento");
+                        if (escopo->tvar != $3 && ($3 >= 1 && $3 <= 4))
                             Incompatibilidade("Tipo de valor retornado");
                     }  PVIRG  {printf (";\n");}
                 ;
@@ -539,6 +543,8 @@ Variavel		:   ID  {
                         if (simb == NULL)   NaoDeclarado ($1);
                         else if (simb->tid != IDVAR)   TipoInadequado ($1);
                         $<simb>$ = simb;
+                        if (simb != NULL && simb->tid == IDVAR) 
+                            addToList(&listargs,simb->tvar,simb->tid);
                     }  
 					Subscritos  {
 						$$ = $<simb>2;
@@ -576,9 +582,10 @@ ChamadaFunc     :   ID  {
                         printf ("%s ", $1);
                         if (strcmp($1,escopo->cadeia) == 0)
                             NaoEsperado("Recursao nao e possivel nesta linguagem");
-                        simb = ProcuraSimb ($1, escopo);
+                        simb = ProcuraSimb ($1, escopoGlobal);
                         if (simb == NULL)   NaoDeclarado ($1);
                         else if (simb->tid != IDFUNC)   TipoInadequado ($1);
+                        else escopo = simb;
                         $<simb>$ = simb;
                     }  ABPAR  {printf ("(");}  Argumentos  FPAR  {printf (") ");}
 %%
@@ -623,6 +630,8 @@ simbolo InsereSimb (char *cadeia, int tid, int tvar, simbolo escopo) {
 	s = tabsimb[i] = (simbolo) malloc (sizeof (celsimb));
 	s->cadeia = (char*) malloc ((strlen(cadeia)+1) * sizeof(char));
 	strcpy (s->cadeia, cadeia);
+    s->ndims = 0;
+    s->listparam = NULL;
 	s->tid = tid;		s->tvar = tvar;
 	s->inic = FALSE;	s->ref = FALSE;
 	s->prox = aux;	    s->escopo = escopo;
@@ -676,9 +685,9 @@ void VerificaInicRef () {
 			for (s = tabsimb[i]; s!=NULL; s = s->prox)
 				if (s->tid == IDVAR) {
 					if (s->inic == FALSE)
-						printf ("[%10s] %10s:   Nao Inicializada\n", s->escopo->cadeia, s->cadeia);
+						printf ("[%12s] %10s:   Nao Inicializada\n", s->escopo->cadeia, s->cadeia);
 					if (s->ref == FALSE)
-						printf ("[%10s] %10s:   Nao Referenciada\n", s->escopo->cadeia, s->cadeia);
+						printf ("[%12s] %10s:   Nao Referenciada\n", s->escopo->cadeia, s->cadeia);
 				}
 }
 
@@ -707,4 +716,37 @@ void Esperado (char *s) {
 
 void NaoEsperado (char *s) {
 	printf ("\n\n***** Nao Esperado: %s *****\n\n", s);
+}
+
+void addToList(listsimb* lista,int tvar, int tid){
+    if (*lista == NULL){
+        *lista = (listsimb) malloc (sizeof (elemlistsimb));
+        (*lista)->simb = (simbolo) NULL;
+        (*lista)->simb = (simbolo) malloc (sizeof (celsimb));
+        (*lista)->simb->tvar = tvar;
+        (*lista)->simb->tid = tid;
+        (*lista)->prox = NULL;
+    }
+    else {
+        (*lista)->prox = (listsimb) malloc (sizeof (elemlistsimb));
+        (*lista)->prox->simb = (simbolo) malloc (sizeof (celsimb));
+        (*lista)->prox->simb->tvar = tvar;
+        (*lista)->prox->simb->tid = tid;
+        (*lista)->prox->prox = NULL;
+    }
+}
+
+void isParamsOk(listsimb listargs, listsimb listparam){
+    listsimb a = NULL;
+    listsimb p = NULL;
+    printf("listargs: %d ", listargs->simb->tvar);
+    printf("listparam: %d ", listparam->simb->tvar);
+    for (a=listargs,p=listparam; a!=NULL && p!=NULL; a=a->prox, p=p->prox){
+        if (a->simb->tvar != p->simb->tvar){
+            Incompatibilidade("Tipo do argumento e tipo do parmetro");
+            break;
+        }
+    }
+    if (a != NULL || p != NULL)
+        Incompatibilidade("Quantidade de argumentos e de parametros");
 }
