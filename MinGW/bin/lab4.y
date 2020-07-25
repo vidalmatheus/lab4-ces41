@@ -84,6 +84,7 @@ int nparams_call;
 simbolo escopo, escopoGlobal;
 listsimb listargs;
 int indexada;
+int inside;
 
 /*
 	Prototipos das funcoes para a tabela de simbolos
@@ -313,7 +314,7 @@ Parametro   	:
                 ;
 Corpo     	    :   Decls  Comandos
                 ;
-ModPrincipal  	:   PRINCIPAL {escopo = InsereSimb ("##principal", IDPRINCIPAL, tipocorrente, escopo);} {printf ("principal\n");}  Corpo
+ModPrincipal  	:   PRINCIPAL {escopo = InsereSimb ("##principal", IDPRINCIPAL, tipocorrente, escopoGlobal);} {printf ("principal\n");}  Corpo
                 ;
 Comandos       	:   COMANDOS  {printf ("comandos ");}  CmdComp
                 ;
@@ -388,15 +389,30 @@ ElemEscr		:   CADEIA  {printf ("\"%s\" ", $1);}
                 ;
 ChamadaProc   	:	CHAMAR  ID {printf ("chamar %s ", $2);}
                     {
+                        inside = FALSE;
+                        if (strcmp($2,escopo->cadeia) == 0)
+                            NaoEsperado("Recursao nao e possivel nesta linguagem");
                         simb = ProcuraSimb ($2, escopoGlobal);
                         if (simb == NULL)   NaoDeclarado ($2);
                         else if (simb->tid != IDPROC)   TipoInadequado ($2);
+                        else {
+                            escopo = simb;
+                            inside = TRUE;
+                        }
                         $<simb>$ = simb;
                     }
                     ABPAR  {printf ("(");} Argumentos
                     FPAR  PVIRG  {printf (") ;\n");}
+                    {
+                        if (inside == TRUE)
+                            escopo = ProcuraSimb("##principal", escopoGlobal);
+                    }
                 ;
-Argumentos    	:
+Argumentos    	:  {listargs = NULL;}                 
+                {
+                    if (escopo != NULL && escopo->listparam != NULL)
+                        isParamsOk(listargs,escopo->listparam);
+                }
                 |  {listargs = NULL;} ListExpr
                 {
                     if (escopo != NULL && escopo->listparam != NULL)
@@ -524,8 +540,10 @@ Fator		    :   Variavel  {
                         }
                     }
                 |   CTINT  {printf ("%d ", $1); $$ = INTEGER;
- 														if(indexada == TRUE && $1 <= 0){Esperado("Valor inteiro positivo");}
-										}
+ 							    if(indexada == TRUE && $1 <= 0){
+                                    Esperado("Valor inteiro positivo");
+                                }
+                            }
                 |   CTREAL  {printf ("%g ", $1); $$ = FLOAT;}
                 |   CTCARAC  {printf ("\'%c\' ", $1); $$ = CHAR;}
             	|   VERDADE  {printf ("verdade "); $$ = LOGICAL;}
@@ -545,7 +563,10 @@ Fator		    :   Variavel  {
 Variavel		:   ID  {
                         printf ("%s ", $1);
                         simb = ProcuraSimb ($1, escopo);
-                        if (simb == NULL)   NaoDeclarado ($1);
+                        if (simb == NULL){
+                            addToList(&listargs,0,IDVAR);
+                            NaoDeclarado ($1);
+                        }   
                         else if (simb->tid != IDVAR)   TipoInadequado ($1);
                         $<simb>$ = simb;
                         if (simb != NULL && simb->tid == IDVAR)
@@ -587,15 +608,25 @@ ListSubscr  	:   ExprAux4
 					}
                 ;
 ChamadaFunc     :   ID  {
+                        inside = FALSE;
                         printf ("%s ", $1);
                         if (strcmp($1,escopo->cadeia) == 0)
                             NaoEsperado("Recursao nao e possivel nesta linguagem");
                         simb = ProcuraSimb ($1, escopoGlobal);
                         if (simb == NULL)   NaoDeclarado ($1);
                         else if (simb->tid != IDFUNC)   TipoInadequado ($1);
-                        else escopo = simb;
+                        else {
+                            escopo = simb;
+                            inside = TRUE;
+                        }
                         $<simb>$ = simb;
-                    }  ABPAR  {printf ("(");}  Argumentos  FPAR  {printf (") ");}
+                    }  ABPAR  {printf ("(");} Argumentos FPAR  {printf (") ");}
+                    {
+                        if (inside == TRUE){
+                            // escopo = ProcuraSimb("##principal", escopoGlobal);
+                            printf("%s ", escopo->cadeia);
+                        }
+                    }
 %%
 
 /* Inclusao do analisador lexico  */
@@ -733,7 +764,7 @@ void NaoEsperado (char *s) {
 	printf ("\n\n***** Nao Esperado: %s *****\n\n", s);
 }
 
-void addToList(listsimb* lista,int tvar, int tid){
+void addToList(listsimb* lista, int tvar, int tid){
     if (*lista == NULL){
         *lista = (listsimb) malloc (sizeof (elemlistsimb));
         (*lista)->simb = (simbolo) NULL;
@@ -754,14 +785,20 @@ void addToList(listsimb* lista,int tvar, int tid){
 void isParamsOk(listsimb listargs, listsimb listparam){
     listsimb a = NULL;
     listsimb p = NULL;
-    printf("listargs: %d ", listargs->simb->tvar);
-    printf("listparam: %d ", listparam->simb->tvar);
+
+    for (a=listargs; a!=NULL; a=a->prox)
+        printf("%d ", a->simb->tvar);
+
+    printf ("\n");
+    for (p=listparam; p!=NULL; p=p->prox)
+        printf("%d ", p->simb->tvar);
+
     for (a=listargs,p=listparam; a!=NULL && p!=NULL; a=a->prox, p=p->prox){
         if (a->simb->tvar != p->simb->tvar){
             Incompatibilidade("Tipo do argumento e tipo do parmetro");
             break;
         }
     }
-    if (a != NULL || p != NULL)
+    if ((a && !p) || (!a && p))
         Incompatibilidade("Quantidade de argumentos e de parametros");
 }
