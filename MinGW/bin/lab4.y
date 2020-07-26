@@ -403,7 +403,7 @@ Argumentos    	:  {listargs = NULL;}
 CmdRetornar  	:	RETORNAR  PVIRG {printf ("retornar ; ");}
                 {
                     if (escopo->tid == IDFUNC)
-                        Esperado("Identificador de funcao");
+                        Esperado("Retorno de variavel para funcao");
                 }
 				|   RETORNAR  {printf ("retornar ");}
                     Expressao
