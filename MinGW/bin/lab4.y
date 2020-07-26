@@ -545,8 +545,13 @@ Variavel		:   ID  {
                         printf ("%s ", $1);
                         simb = ProcuraSimb ($1, escopo);
                         if (simb == NULL){
-                            addToList(&listargs,0,IDVAR);
-                            NaoDeclarado ($1, escopo);
+                            simb = ProcuraSimb ($1, escopoGlobal);
+                            if (simb == NULL){
+                                NaoDeclarado ($1, escopo);
+                                NaoDeclarado ($1, escopoGlobal);
+                                addToList(&listargs,0,IDVAR);
+                            }
+                            else addToList(&listargs,simb->tvar,simb->tid);
                         }   
                         else if (simb->tid != IDVAR)   TipoInadequado ($1);
                         $<simb>$ = simb;
@@ -757,7 +762,7 @@ void addToList(listsimb* lista, int tvar, int tid){
 void isParamsOk(listsimb listargs, listsimb listparam){
     listsimb a = NULL;
     listsimb p = NULL;
-    
+
     for (a=listargs,p=listparam; a!=NULL && p!=NULL; a=a->prox, p=p->prox){
         if (a->simb->tvar != p->simb->tvar){
             Incompatibilidade("Tipo do argumento e tipo do parmetro");
