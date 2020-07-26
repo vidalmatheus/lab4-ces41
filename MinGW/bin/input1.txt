@@ -1,7 +1,7 @@
 programa HelloWorld {{{
     /* Isto é um comentário ! */
     var {
-        carac (nome)
+        carac (Hello)
     }
     procedimento Hello (carac nome)
     comandos {
@@ -19,20 +19,28 @@ programa HelloWorld {{{
     var {
         carac (nome[15],a,b)
         int (i, v[10])
+        real (x)
     }
     comandos {
-        a = 'b';
+        a = 1.2;
+        a = verdade;
+        a = 1;
+        a = a % 1.2; 
         para i (1.2;i;i) {
             v[i] = i;
         }
         
+        para x (1.5;x<5.2;x+1){
+            escrever("Hello");
+        }
+
         a[0] = 'c';
         chamar Hello();
         a = Hello2(nome[1],b);
         a = Hello2(nome[1],i);
-        nome[100] = 'a';
+        nome[2.5] = 'a';
 
         escrever ("Qual seu nome?: ");
-        ler(nome[15]); 
+        ler(nome); 
     }
 }}}
