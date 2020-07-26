@@ -26,10 +26,11 @@ programa HelloWorld {{{
             v[i] = i;
         }
         
+        a[0] = 'c';
         chamar Hello();
-        a = Hello2(nome,b);
-        a = Hello2(nome,i);
-        nome[20] = 'a';
+        a = Hello2(nome[1],b);
+        a = Hello2(nome[1],i);
+        nome[100] = 'a';
 
         escrever ("Qual seu nome?: ");
         ler(nome[15]); 
