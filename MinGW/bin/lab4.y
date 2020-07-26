@@ -757,14 +757,7 @@ void addToList(listsimb* lista, int tvar, int tid){
 void isParamsOk(listsimb listargs, listsimb listparam){
     listsimb a = NULL;
     listsimb p = NULL;
-
-    // for (a=listargs; a!=NULL; a=a->prox)
-    //     printf("%d ", a->simb->tvar);
-
-    // printf ("\n");
-    // for (p=listparam; p!=NULL; p=p->prox)
-    //     printf("%d ", p->simb->tvar);
-
+    
     for (a=listargs,p=listparam; a!=NULL && p!=NULL; a=a->prox, p=p->prox){
         if (a->simb->tvar != p->simb->tvar){
             Incompatibilidade("Tipo do argumento e tipo do parmetro");
