@@ -1,0 +1,91 @@
+programa HelloWorld {{{
+var {
+int ( inteiro )
+}
+funcao int Hello ( int x ) var {
+int ( count )
+}
+comandos {
+count = x ;
+count = count + 5 ;
+escrever ( x ) ;
+retornar count ;
+}
+procedimento Hi ( carac user , logic bool )
+var {
+int ( iduser )
+}
+comandos {
+ler ( iduser ) ;
+se ( bool == verdade )
+escrever ( "ola " , user ) ;
+}
+principal
+var {
+carac ( c , word [ 10 ] )
+int ( i , n , mat [ 5 , 5 ] )
+real ( numero )
+logic ( booleana )
+}
+comandos {
+escrever ( "Hello World!" ) ;
+mat [ 3 , 4 ] = 10 ;
+n = 15 ;
+ler ( c ) ;
+booleana = falso ;
+se ( booleana )
+word [ 2 ] = 'a' ;
+senao
+numero = 2.5 ;
+para i ( 0 ; i < 10 ; i + 1 ) {
+n = n + 1 ;
+}
+ler ( inteiro ) ;
+i = 5 ;
+enquanto ( i != 0 )
+{
+n = Hello (i ) ;
+i = i - 1 ;
+}
+chamar Hi (c , booleana ) ;
+escrever ( "Hello World!" ) ;
+}
+}}}
+
+
+
+   TABELA  DE  SIMBOLOS:
+
+Classe 0:
+  (mat, IDVAR, INTEGER, 1, 1, EH ARRAY
+	ndims = 2, dimensoes:  5  5, ##principal)
+Classe 1:
+  (count, IDVAR, INTEGER, 1, 1, Hello)
+Classe 3:
+  (inteiro, IDVAR, INTEGER, 1, 1, ##global)
+Classe 5:
+  (booleana, IDVAR, LOGICAL, 1, 1, ##principal)
+  (x, IDVAR, INTEGER, 1, 1, Hello)
+  (##global, IDGLOB)
+Classe 7:
+  (word, IDVAR, CHAR, 1, 1, EH ARRAY
+	ndims = 1, dimensoes:  10, ##principal)
+  (c, IDVAR, CHAR, 1, 1, ##principal)
+Classe 8:
+  (iduser, IDVAR, INTEGER, 1, 1, Hi)
+  (HelloWorld, IDPROG, ##global)
+Classe 10:
+  (user, IDVAR, CHAR, 1, 1, Hi)
+Classe 13:
+  (i, IDVAR, INTEGER, 1, 1, ##principal)
+Classe 14:
+  (bool, IDVAR, LOGICAL, 1, 1, Hi)
+Classe 16:
+  (Hi, IDPROC, ##global)
+Classe 17:
+  (Hello, IDFUNC, INTEGER, ##global)
+Classe 18:
+  (numero, IDVAR, FLOAT, 1, 1, ##principal)
+  (n, IDVAR, INTEGER, 1, 1, ##principal)
+Classe 20:
+  (##principal, IDPRINCIPAL, ##global)
