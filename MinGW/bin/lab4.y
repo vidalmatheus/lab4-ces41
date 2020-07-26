@@ -82,6 +82,7 @@ simbolo simb;
 int tipocorrente;
 int nparams_call;
 simbolo escopo, escopoGlobal;
+listsimb modParams;
 listsimb listargs;
 int indexada;
 int inside;
@@ -97,9 +98,9 @@ simbolo InsereSimb (char *, int, int, simbolo);
 int hash (char *);
 simbolo ProcuraSimb (char *, simbolo);
 void VerificaInicRef (void);
-void DeclaracaoRepetida (char *);
+void DeclaracaoRepetida (char *, simbolo escopo);
 void TipoInadequado (char *);
-void NaoDeclarado (char *);
+void NaoDeclarado (char *, simbolo escopo);
 void Incompatibilidade (char *);
 void Esperado (char *);
 void NaoEsperado (char *);
@@ -224,7 +225,7 @@ ListElem    	:	Elem  |  ListElem  VIRG  {printf (", ");}  Elem
 Elem        	:	ID  {
                         printf ("%s ", $1);
                         if  (ProcuraSimb ($1, escopo)  !=  NULL)
-                            DeclaracaoRepetida ($1);
+                            DeclaracaoRepetida ($1,escopo);
                         else
                             simb = InsereSimb ($1,  IDVAR,  tipocorrente, escopo);
 							simb->array = FALSE; simb->ndims = 0;
@@ -271,7 +272,7 @@ CabFunc	    	:   FUNCAO {printf ("funcao ");} Tipo
                         if ($4 == "principal")
                             NaoEsperado("Outro modulo de cabecalho principal");
                         else if  (ProcuraSimb ($4, escopo)  !=  NULL)
-                            DeclaracaoRepetida ($4);
+                            DeclaracaoRepetida ($4, escopo);
                         else
                             escopo = InsereSimb ($4,  IDFUNC,  tipocorrente, escopo);
                     }  ABPAR  {printf ("( ");}  ListParam
@@ -285,7 +286,7 @@ CabProc	    	:   PROCEDIMENTO {printf ("procedimento ");}
                         if ($3 == "principal")
                             NaoEsperado("Outro modulo de cabecalho principal");
                         else if  (ProcuraSimb ($3, escopo)  !=  NULL)
-                            DeclaracaoRepetida ($3);
+                            DeclaracaoRepetida ($3, escopo);
                         else
                             escopo = InsereSimb ($3,  IDPROC,  tipocorrente, escopo);
                     }  ABPAR  {printf ("( ");}  ListParam
@@ -303,7 +304,7 @@ Parametro   	:
                         if (simb != NULL && simb->tid != IDVAR)
                             NaoEsperado("Chamada de modulo externo como parametro");
                         if  (ProcuraSimb ($2, escopo)  !=  NULL)
-                            DeclaracaoRepetida ($2);
+                            DeclaracaoRepetida ($2, escopo);
                         else{
                             simb = InsereSimb ($2,  IDVAR,  tipocorrente, escopo);
                             simb->inic = TRUE;
@@ -389,34 +390,27 @@ ElemEscr		:   CADEIA  {printf ("\"%s\" ", $1);}
                 ;
 ChamadaProc   	:	CHAMAR  ID {printf ("chamar %s ", $2);}
                     {
-                        inside = FALSE;
+                        modParams = NULL;
                         if (strcmp($2,escopo->cadeia) == 0)
                             NaoEsperado("Recursao nao e possivel nesta linguagem");
                         simb = ProcuraSimb ($2, escopoGlobal);
-                        if (simb == NULL)   NaoDeclarado ($2);
+                        if (simb == NULL)   NaoDeclarado ($2, escopo);
                         else if (simb->tid != IDPROC)   TipoInadequado ($2);
-                        else {
-                            escopo = simb;
-                            inside = TRUE;
-                        }
+                        else modParams = simb->listparam;
                         $<simb>$ = simb;
                     }
                     ABPAR  {printf ("(");} Argumentos
                     FPAR  PVIRG  {printf (") ;\n");}
-                    {
-                        if (inside == TRUE)
-                            escopo = ProcuraSimb("##principal", escopoGlobal);
-                    }
                 ;
 Argumentos    	:  {listargs = NULL;}                 
                 {
-                    if (escopo != NULL && escopo->listparam != NULL)
-                        isParamsOk(listargs,escopo->listparam);
+                    if (escopo != NULL && modParams != NULL)
+                        isParamsOk(listargs,modParams);
                 }
                 |  {listargs = NULL;} ListExpr
                 {
-                    if (escopo != NULL && escopo->listparam != NULL)
-                        isParamsOk(listargs,escopo->listparam);
+                    if (escopo != NULL && modParams != NULL)
+                        isParamsOk(listargs, modParams);
                 }
                 ;
 CmdRetornar  	:	RETORNAR  PVIRG {printf ("retornar ; ");}
@@ -565,7 +559,7 @@ Variavel		:   ID  {
                         simb = ProcuraSimb ($1, escopo);
                         if (simb == NULL){
                             addToList(&listargs,0,IDVAR);
-                            NaoDeclarado ($1);
+                            NaoDeclarado ($1, escopo);
                         }   
                         else if (simb->tid != IDVAR)   TipoInadequado ($1);
                         $<simb>$ = simb;
@@ -608,25 +602,16 @@ ListSubscr  	:   ExprAux4
 					}
                 ;
 ChamadaFunc     :   ID  {
-                        inside = FALSE;
+                        modParams = NULL;
                         printf ("%s ", $1);
                         if (strcmp($1,escopo->cadeia) == 0)
                             NaoEsperado("Recursao nao e possivel nesta linguagem");
                         simb = ProcuraSimb ($1, escopoGlobal);
-                        if (simb == NULL)   NaoDeclarado ($1);
+                        if (simb == NULL)   NaoDeclarado ($1, escopo);
                         else if (simb->tid != IDFUNC)   TipoInadequado ($1);
-                        else {
-                            escopo = simb;
-                            inside = TRUE;
-                        }
+                        else modParams = simb->listparam;
                         $<simb>$ = simb;
                     }  ABPAR  {printf ("(");} Argumentos FPAR  {printf (") ");}
-                    {
-                        if (inside == TRUE){
-                            // escopo = ProcuraSimb("##principal", escopoGlobal);
-                            printf("%s ", escopo->cadeia);
-                        }
-                    }
 %%
 
 /* Inclusao do analisador lexico  */
@@ -740,12 +725,12 @@ void VerificaInicRef () {
 
 /*  Mensagens de erros semanticos  */
 
-void DeclaracaoRepetida (char *s) {
-	printf ("\n\n***** Declaracao Repetida: %s *****\n\n", s);
+void DeclaracaoRepetida (char *s, simbolo escopo) {
+	printf ("\n\n***** Declaracao Repetida: %s no escopo: %s*****\n\n", s, escopo->cadeia);
 }
 
-void NaoDeclarado (char *s) {
-    printf ("\n\n***** Identificador Nao Declarado: %s *****\n\n", s);
+void NaoDeclarado (char *s, simbolo escopo) {
+    printf ("\n\n***** Identificador Nao Declarado: %s no escopo: %s *****\n\n", s, escopo->cadeia);
 }
 
 void TipoInadequado (char *s) {
@@ -786,12 +771,12 @@ void isParamsOk(listsimb listargs, listsimb listparam){
     listsimb a = NULL;
     listsimb p = NULL;
 
-    for (a=listargs; a!=NULL; a=a->prox)
-        printf("%d ", a->simb->tvar);
+    // for (a=listargs; a!=NULL; a=a->prox)
+    //     printf("%d ", a->simb->tvar);
 
-    printf ("\n");
-    for (p=listparam; p!=NULL; p=p->prox)
-        printf("%d ", p->simb->tvar);
+    // printf ("\n");
+    // for (p=listparam; p!=NULL; p=p->prox)
+    //     printf("%d ", p->simb->tvar);
 
     for (a=listargs,p=listparam; a!=NULL && p!=NULL; a=a->prox, p=p->prox){
         if (a->simb->tvar != p->simb->tvar){
