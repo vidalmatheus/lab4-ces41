@@ -107,19 +107,6 @@ void NaoEsperado (char *);
 void addToList(listsimb*, int, int);
 void isParamsOk(listsimb, listsimb);
 
-
-// /* Declaracoes para atributos das expressoes e variaveis */
-
-// typedef struct infoexpressao infoexpressao;
-// struct infoexpressao {
-// 	int tipo;
-// };
-
-// typedef struct infovariavel infovariavel;
-// struct infovariavel {
-// 	simbolo simb;
-// };
-
 %}
 
 /* Definicao do tipo de yylval e dos atributos dos nao terminais */
