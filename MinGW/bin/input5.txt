@@ -1,0 +1,22 @@
+programa Exponencial {{{
+    funcao real exp (int n)
+    var { int (i) real (result,e) }
+    comandos {
+        i = 1;
+        e = 2.71;
+        result = e;        
+        repetir {
+            result = result*e;
+            i = i+1;
+        } enquanto (i<n);
+    } /* fim da funcao exp */
+
+    principal
+    var { int (n) carac (c) }
+    comandos {
+        escrever ("Numero: ");
+        ler(n);
+        c = 'e';
+        escrever ("Result: ",c,"^",n,"=",exp(n));
+    }
+}}}

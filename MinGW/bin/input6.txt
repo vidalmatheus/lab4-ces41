@@ -1,0 +1,10 @@
+programa OpRelacionais {{{
+    principal
+    comandos {
+        escrever ("verdade && falso=", verdade && falso);
+        escrever ("verdade || falso=", verdade || falso );
+        escrever (verdade);
+        escrever ("!verdade=", !verdade);
+        escrever ("verdade!=falso", verdade!=falso);
+    }
+}}}
