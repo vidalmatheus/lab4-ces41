@@ -8,18 +8,20 @@ programa Exponencial {{{
         repetir {
             result = result*e;
             i = i+1;
-        } enquanto (i<n);
+        } enquanto (i+n);
 
-        retornar result;
+        retornar exp(result);
     } /* fim da funcao exp */
 
     principal
-    var { int (n) carac (c) real (x)}
+    var { int (n,i) carac (c) real (x)}
     comandos {
         escrever ("Numero: ");
         ler(n);
         c = 'e';
         escrever ("Result: ",c,"^",n,"=",exp(n));
-        x = exp(n);
+        x = exp();
+        x = exp(n, n);
+        x = exp(c);
     }
 }}}

@@ -1,0 +1,21 @@
+programa OpRelacionais {{{
+    principal
+    var {
+      int (a,b)
+    }
+    comandos {
+        a = 5;
+        c = verdade;
+        escrever ("verdade && falso= ", verdade && falso);
+        escrever ("verdade || falso= ", verdade || b );
+        escrever (verdade);
+        escrever ("!verdade= ", ~verdade);
+        escrever ("verdade+falso", verdade+falso);
+        escrever ("a>b: ", a>b);
+        escrever ("a>=b: ", verdade >=b);
+        escrever ("a==b: ", a==verdade);
+        escrever ("a!=b: ", falso != b);
+        escrever ("a<b: ", a<b);
+        escrever ("a<=b: ", a<=falso);
+    }
+}}}
