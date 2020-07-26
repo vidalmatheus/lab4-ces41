@@ -1,94 +1,30 @@
 %{
 #include 	<string.h>
 #include 	<stdio.h>
-/*
-// Palavras Reservadas:
-#define 	CARAC 			1
-#define 	CHAMAR	    	2
-#define		COMANDOS		3
-#define		ENQUANTO		4
-#define		ESCREVER		5
-#define		FALSO			6
-#define 	FUNCAO			7
-#define		INT				8
-#define		LER 			9
-#define		LOGIC			10
-#define 	PARA			11
-#define		PRINCIPAL		12
-#define		PROCEDIMENTO	13
-#define		PROGRAMA		14
-#define		REAL			15
-#define		REPETIR			16
-#define		RETORNAR		17
-#define		SE				18
-#define		SENAO			19
-#define		VAR				20
-#define		VERDADE			21
 
-// Sintaxes:
-#define	    ID		    	22
-#define	    CTINT			23
-#define	    CTCARAC			24
-#define		CTREAL			25
-#define		CADEIA			26
-
-// Operadores:
-#define		OR			27
-#define		AND			28
-#define		NOT			29
-#define		NEG			30
-#define		OPREL		31
-#define 	LT 			1
-#define 	LE 			2
-#define	    GT			3
-#define	    GE			4
-#define	    EQ			5
-#define	    NE			6
-#define		OPAD 		32
-#define 	MAIS		1
-#define 	MENOS		2
-#define		OPMULT		33
-#define 	MULT		1
-#define		DIV			2
-#define		RESTO		3
-
-// Separadores e outros:
-#define		ATRIB		35
-#define		ABPAR		36
-#define		FPAR		37
-#define		ABCOL		38
-#define		FCOL		39
-#define		ABCHAV		40
-#define		FCHAV		41
-#define		ABTRIP		42
-#define		FTRIP		43
-#define		PVIRG		44
-#define		VIRG		45
-*/
 void comentario (void);
 char tratachar (char *);
 void tratacadeia (char *);
-/*union {
-	char string[50];
-	int atr, valor;
-	float valreal;
-	char carac;
-} yylval;
-*/
+
 %}
 delim		[ \t\n\r]
 ws			{delim}+
 digito	    [0-9]
 letra		[A-Za-z]
+id			{letra}({letra}|{digito})*
 ctint		{digito}+
-ctreal      {digito}+\.{digito}*([Ee][+-]?{digito}+)?
+
 carac1	    \\.|[^\\'\n]
 ctcarac	    '{carac1}'
+
+ctreal      {digito}+\.{digito}*([Ee][+-]?{digito}+)?
+
 carac2	    \\.|[^\\\"\n]
 cadeia	    \"{carac2}*\"
-id			{letra}({letra}|{digito})*
 %%
+
 {ws}			{ ;}
+
 carac			{return CARAC;}
 chamar			{return CHAMAR;}
 comandos		{return COMANDOS;}
@@ -96,7 +32,7 @@ enquanto		{return ENQUANTO;}
 escrever		{return ESCREVER;}
 falso			{return FALSO;}
 funcao			{return FUNCAO;}
-int				{return INT;}
+int 			{return INT;}
 ler				{return LER;}
 logic			{return LOGIC;}
 para			{return PARA;}
@@ -110,39 +46,45 @@ se				{return SE;}
 senao			{return SENAO;}
 var				{return VAR;}
 verdade			{return VERDADE;}
+
 {id}			{strcpy (yylval.cadeia, yytext); return ID;}
 {ctcarac}	    {yylval.carac = tratachar (yytext); return CTCARAC;}
 {cadeia}		{strcpy (yylval.cadeia, yytext);
 				tratacadeia (yylval.cadeia); return CADEIA;}
 {ctint}		    {yylval.valint = atoi(yytext); return CTINT;}
 {ctreal}		{yylval.valreal = atof(yytext); return CTREAL;}
-"||"			{return OR;}
-"&&"			{return AND;}
-"!"				{return NOT;}
-"~"				{return NEG;}
-"<"		    	{yylval.atr = LT; return OPREL;}
-"<="			{yylval.atr = LE; return OPREL;}
-">"		    	{yylval.atr = GT; return OPREL;}
-">="			{yylval.atr = GE; return OPREL;}
-"=="			{yylval.atr = EQ; return OPREL;}
-"!="			{yylval.atr = NE; return OPREL;}
-"+"				{yylval.atr = MAIS; return OPAD;}
-"-"				{yylval.atr = MENOS; return OPAD;}
-"*"				{yylval.atr = MULT; return OPMULT;}
-"/"				{yylval.atr = DIV; return OPMULT;}
-"%"				{yylval.atr = RESTO; return OPMULT;}
-"="				{return ATRIB;}
-"("				{return ABPAR;}
-")"				{return FPAR;}
-"["				{return ABCOL;}
-"]"				{return FCOL;}
-"{"				{return ABCHAV;}
-"}"				{return FCHAV;}
-"{{{"			{return ABTRIP;}
-"}}}"			{return FTRIP;}
-";"				{return PVIRG;}
-","				{return VIRG;}
-"/*"			{comentario ();} 
+
+"||"		{return OR;}
+"&&"		{return AND;}
+"!" 		{return NOT;}
+"<"		    {yylval.atr = LT; return OPREL;}
+"<="		{yylval.atr = LE; return OPREL;}
+">"		    {yylval.atr = GT; return OPREL;}
+">="		{yylval.atr = GE; return OPREL;}
+"=="		{yylval.atr = EQ; return OPREL;}
+"!="		{yylval.atr = NE; return OPREL;}
+"+"			{yylval.atr = MAIS; return OPAD;}
+"-"			{yylval.atr = MENOS; return OPAD;}
+"*"			{yylval.atr = MULT; return OPMULT;}
+"/"			{yylval.atr = DIV; return OPMULT;}
+"%"			{yylval.atr = RESTO; return OPMULT;}
+"~"			{return NEG;}
+
+"="			{return ATRIB;}
+"("			{return ABPAR;}
+")"			{return FPAR;}
+"["			{return ABCOL;}
+"]"			{return FCOL;}
+"{"			{return ABCHAV;}
+"}"			{return FCHAV;}
+"{{{"		{return ABTRIP;}
+"}}}"		{return FTRIP;}
+";"			{return PVIRG;}
+","			{return VIRG;}
+
+"/*"		{comentario ();}
+
+.			{yylval.carac = yytext[0]; return INVAL;}
 %%
 
 /*
@@ -216,30 +158,3 @@ char tratachar (char *s) {
 	}
 	s[i] = s[n];
 }
-
-
-/*
-main () {
-	int i;
-	printf ("\n       texto        |   tipo   |        atributo    \n");
-	printf ("------------------------------------------------------\n");
-	while (i = yylex ()) {
-		printf ("%20s|%10d|", yytext, i);
-		switch (i) {
-			case ID: case CTCARAC: case CADEIA:
-				printf ("%20s", yylval.string); break;
-			case CTINT:
-				printf ("%20d", yylval.valor); break;
-			case CTREAL:
-				printf ("%20g", yylval.valreal); break;
-			case OPREL:
-				printf ("%20d", yylval.atr); break;
-			case OPAD:
-				printf ("%20d", yylval.atr); break;
-			case OPMULT:
-				printf ("%20d", yylval.atr); break;
-		}
-		printf ("\n");
-	}
-}
-*/
