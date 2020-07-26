@@ -1,0 +1,56 @@
+programa HelloWorld {{{
+
+    /* Funcao de teste */
+    funcao int Hello (int x)
+    var {
+        int (count)
+    }
+    comandos {
+        count = x;
+        count = count + 5;
+        escrever(x);
+        retornar;
+    }
+    /* Procedimento de teste */
+   procedimento Hi (carac user, logic bool)
+   var {
+        int (iduser)
+   }
+   comandos {
+        ler(iduser);
+        se (bool == verdade)
+            escrever("ola ", user);
+        retornar user;
+   }
+
+   principal
+   var {
+        carac (c, word[10])
+        int (i, n, mat[5,5])
+        real (numero)
+        logic (booleana)
+   }
+   comandos {
+        escrever("Hello World!");
+        mat[3] = 10;
+        ler(c);
+        booleana = falso;
+
+        se (booleana) word[2] = 'a';
+        senao numero = 2.5;
+
+        para i (0;i<10;i+1) {
+            n = n + 1;
+        }
+
+        ler(inteiro);
+        i = 5;
+        enquanto (i != falso) {
+          n = Hello(i);
+          i = i - 1;
+        }
+        chamar Hi(c);
+        escrever("Hello World!");
+   }
+
+}}} /* Fim do programa HelloWorld */

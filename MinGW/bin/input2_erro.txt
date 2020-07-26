@@ -1,0 +1,19 @@
+programa CalculaFatorial {{{
+    funcao int fatorial ()
+    var {int (i,prod)}
+    comandos {
+        prod = 1;
+        para i (x;i<=n;i+verdade) {
+            prod = prod*i;
+        }
+        retornar;
+    } /* fim da funcao fatorial */
+     
+    principal
+    
+    comandos {
+        escrever ("Numero: ");
+        ler(n);
+        escrever ("Fatorial de ", n, " ", fatorial(n));
+    }
+}}}
