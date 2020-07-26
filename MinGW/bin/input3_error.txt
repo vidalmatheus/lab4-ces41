@@ -1,0 +1,32 @@
+programa CalculaRaizQuadrada {{{
+    funcao int raizQuadradaAprox (int x)
+    var {int (left,right[5],mid)}
+    comandos {
+        se (x == 0)
+            retornar 0;
+
+        left = 1;
+        right = x-1;
+        enquanto (x+2){
+            mid = left + (right - left)/2;
+            se (mid < x/mid)
+                left = mid+1;
+            senao se (mid * x/mid)
+                right = mid-1;
+            senao retornar left;
+        }
+
+        se (left >= x/left+1)
+            retornar left-1;
+        senao retornar left;
+    } /* fim da funcao raiz quadrada */
+
+    principal
+    var { int(x) real (y,z[5], w[3])}
+    comandos {
+        escrever ("Numero: ");
+        ler(x[2]);
+        escrever ("Raiz Quadrada de ", x," ", raizQuadradaAprox(x, x));
+        z[0] = raizQuadradaAprox(y);
+    }
+}}}

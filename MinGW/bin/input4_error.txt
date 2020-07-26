@@ -1,0 +1,24 @@
+programa VerificaDivisor {{{
+    var {
+        logic (bool1, bool2)
+    }
+
+    funcao logic ehDivisor (int d, int n)
+    comandos {
+        se (d+n)
+            retornar verdade;
+        senao retornar falso;
+    } /* fim da funcao ehDivisor */
+
+    principal
+    var { int(d,n) real(f)}
+    comandos {
+        escrever ("Numero: ");
+        ler(n);
+        escrever ("Possivel divisor: ");
+        ler(d);
+        bool = ehDivisor(f,f);
+        bool1 = ehDivisor(f,d,n);
+        escrever (ehDivisor());
+    }
+}}}
